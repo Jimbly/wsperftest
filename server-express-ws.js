@@ -3,6 +3,7 @@ Results:
   Testing with 2 clients
   Using perMessageDeflate used ~2x as much CPU for the same messages and ran at ~85% speed
     CPU was at 4.6 and 3.9
+    Above conclusion sounds wrong?
 */
 const WebSocket = require('ws');
 const express = require('express');
@@ -21,24 +22,40 @@ function testWS(with_deflate) {
     maxPayload: 1024*1024,
   };
   if (with_deflate) {
+    // base perf (after 4 Ls): 3.0s/L
     opts.perMessageDeflate = {
       zlibDeflateOptions: {
         // See zlib defaults.
-        chunkSize: 1024,
-        memLevel: 7,
-        level: 3
+        // chunkSize: 1024, - default seems fine, probably 1024?
+        // 2048 - 22% 2.8s
+        // 1024 - 22% 2.7s
+        // 512 - 22% 3s
+        // memLevel: 7, - default seems fine, probably 7?
+        // 3 - 22% - 3s
+        // 7 - 22% - 2.7s
+        // 9 - 22% - 2.7s
+        level: 5,
+        // 2 - 24% - 2.6s/L
+        // 3 - 24% - 2.8s/L
+        // 4 - 23% - 2.6s/L
+        // 5 - 22% - 2.7s
+        // 9 - 21% - 10s/L
       },
-      zlibInflateOptions: {
-        chunkSize: 10 * 1024
-      },
+      // zlibInflateOptions: {
+      //   chunkSize: 10 * 1024
+      // },
       // Other options settable:
       clientNoContextTakeover: true, // Defaults to negotiated value.
       serverNoContextTakeover: true, // Defaults to negotiated value.
-      serverMaxWindowBits: 10, // Defaults to negotiated value.
+        // setting these to false takes 3x the CPU, but reduces _upload_ immensely, download slightly
+      // serverMaxWindowBits: 10, // Defaults to negotiated value.
       // Below options specified as default values.
-      concurrencyLimit: 10, // Limits zlib concurrency for perf.
-      threshold: 512 // Size (in bytes) below which messages
+      concurrencyLimit: 2, // Limits zlib concurrency for perf. - no impact on CPU/message
+      threshold: 512, // Size (in bytes) below which messages
       // should not be compressed if context takeover is disabled.
+        // 128: 3.9 // 21% size
+        // 256: 3.2 // 22% size
+        // 512: 3.0 // 22% size
     };
   }
 

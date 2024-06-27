@@ -1,6 +1,8 @@
 const assert = require('assert');
 const WebSocket = require('ws');
 
+const loop = true;
+
 const debug_data = require('./debug_data.js');
 let raw_read = 0;
 let raw_write = 0;
@@ -75,7 +77,9 @@ function doTest() {
     if (got_error) {
       setTimeout(doTest, 100);
     } else {
-      doTest();
+      if (loop) {
+        doTest();
+      }
     }
   });
 }
